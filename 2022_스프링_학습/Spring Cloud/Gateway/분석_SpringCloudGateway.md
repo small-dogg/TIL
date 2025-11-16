@@ -14,7 +14,7 @@ Spring Cloud Gateway를 사용하는데에는 아래의 3가지를 기억해야�
 
 ## 동작 원리
 
-![SpringCloudGateway_동작원리](./img/springCloudGateway_process.png)
+![SpringCloudGateway_동작원리](img/springCloudGateway_process.png)
 
 Spring Cloud Gateway는 사용자로부터 전달된 요청이 사전 정의된 API 경로와 일치하다고 판단하면, Web Handler로 전달됩니다. Web Handler는 작성된 Filter를 통해 요청을 실행합니다. Filter 동작 이후, Proxied Service(Microservice)로 사용자의 요청이 전달됩니다.
 
@@ -54,14 +54,14 @@ predicates:
 
 위처럼 사전 정의된 Predicate Factory를 사용하면 Predicate를 쉽게 정의할 수 있습니다. 아래 링크에서는 Route Predicate Factory들을 나열하고 간단한 예시를 정리해두었습니다.
 
-[🏭Route Predicate Factories](./detail/분석_RoutePredicateFactories.md)
+[🏭Route Predicate Factories](detail/분석_RoutePredicateFactories.md)
 
 ## Filter
 
 다음으로는 Filter입니다. Filter는 Global Filters와 GatewayFilter Factories, HttpHeadersFilters가 제공됩니다. Global Filters는 모든 요청에 대해 Global하게 적용되는 FIlter입니다. GateayFilter는 위의 Predicate와 같이, 특정 라우트에 명시하여 사용되어지는 필터이니다. HttpHeadersFilter는 HTTP 요청의 헤더를 필터링하는 Filter입니다.
-[🏭Gateway Filter Factories](./detail/분석_GatewayFilterFactories.md)
-[🏭Global Filters](./detail/분석_GlobalFilters.md)
-[🏭Http Headers Filters](./detail/분석_HttpHeadersFilters.md)
+[🏭Gateway Filter Factories](detail/분석_GatewayFilterFactories.md)
+[🏭Global Filters](detail/분석_GlobalFilters.md)
+[🏭Http Headers Filters](detail/분석_HttpHeadersFilters.md)
 
 ## 🔒 암호 통신
 

@@ -13,7 +13,7 @@ postProcessAfterInitialization -> 실제로 사용되는 중 -> 소멸 전 콜�
 
 ## IoC 컨테이너 생성과 Bean Definition 정의
 
-[01.IoC컨테이너](01.IoC컨테이너.md) 에서 스프링 애플리케이션이 시작되고, IoC 컨테이너가 생성되면서 여러 초기화 작업을 하는 내용을 다룬 바 있다.
+[01.IoC컨테이너](IoC컨테이너_부터_빈생명주기까지_IoC컨테이너.md) 에서 스프링 애플리케이션이 시작되고, IoC 컨테이너가 생성되면서 여러 초기화 작업을 하는 내용을 다룬 바 있다.
 
 그리고 그때 당시에 BeanDefinition이 Bean Factory Post Processor에 의해 Bean 정보들을 수집하는 일련의 작업들을 진행한다.
 
