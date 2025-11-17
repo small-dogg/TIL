@@ -361,3 +361,110 @@ if (earlySingletonExposure) {
 이시점에 BeanWrapper를 사용해서, setter 주입, 필드 주입 @Value기반 타입 변환 등이 이루어진다고 보면 된다.
 
 6. initializeBean (여기서 AOP 프록시가 실제로 생성됨)
+
+Bean 초기화 구간으로 Bean 초기화 콜백 전체를 묶어 실행하는 단계이다.
+
+`AbstractAutowireCapableBeanFactory.initializeBean()`에서 시작한다.
+
+전체 흐름은 아래처럼 진행된다.
+```scss
+initializeBaen()
+  ㄴinvokeAwareMethods()
+  ㄴappleBeanPostProcessorsBeforeInitialization()
+  ㄴinvokeInitMethods()
+  ㄴapplyBeanPostProcessorsAfterInitialization()
+```
+
+invokeAwareMethods() 단계에서는 특정한 Aware 계열을 구현하고 있는 Bean의 경우 수행되도록 설계되어있다.
+
+BeanNameAware, BeanClassLoaderAware, BeanFactoryAware 들이 그들 중 하나이다.
+
+자기 자신의 beanName을 알 수 있거나, BeanFactory에 직접적으로 접근할 수 있거나, ApplicaitonContext에 직접 접근한다던가,
+
+Environment 객체에 접근할 수 있는 Aware이다.
+
+전부 컨테이너 관련 객체를 주입해주는 매커니즘을 가지고 있는 대상들이다.
+
+실제로 IoC컨테이너에 직접적으로 접근할 필요가 있는 경우에는 이를 사용한다.
+
+이 invokeAwareMethods()가 호출되면 Spring 컨테이너가 Bean에게 구현하고 있는 Aware에 따라, 컨테이너 내부 정보를 직접 주입해주는 과정이 발생한다.
+
+7. applyBeanPostProcessorsBeforeInitialization()
+
+DI가 끝난 Bean 을 대상으로, 초기화(Init Callback) 직전에 BeanPostProcessor들이 개입하여 Bean을 조작하는 단계이다.
+
+Bean 상태를 검사하거나, Bean 내부 필드를 변경하고, Proxy가 아닌 원본 Bean을 일부 가공하고, PostConstruct같은 초기화 로직이 실행되기 이전에
+
+반드시 꼭 해야하는 일을 실행한다.
+
+BPP Before Init을 수행할 Bean에게 등록된 BPP들을 순차적으로 postProcessBeforeInitialization 메서드를 호출한다.
+
+JSR 스펙에 따른 @Resource 나 @Inject 같은 DI보완 작업을 추가적으로 수행한다.
+
+앞서 populateBean() 단계에서 의존주입이 거의 다 처리 되긴하지만, JSR-250 / JSR-330 과같은 애너테이션은 처리되지 않는다. 따라서
+
+BPP Before Init 단계에서 처리를 보완한다.
+
+추가로, 대상 빈이 @PostConstructor 가 있는지 확인하고 존재한다면, Init 이후 실행해야겠다 정도로 기록하는 행위도 여기서 이루어진다.
+
+8. invokeInitMethods()
+
+Spring에서 수행되는 init 메서드는 총 3가지로 분류된다.
+```scss
+@PostConstruct
+IntializingBean.afterPropertiesSet()
+init-method (XML 또는 @Bean(initMehotd=''))
+```
+
+JSR 표준에 따라, 반드시 @PostConstruct가 선행되어야하기 떄문에 가장 우선순위가 높다.
+
+그다음으로 Spring Framework 고유 인터페이스로 초기화 콜백중 2번쨰로 실행된다.
+
+개발자가 Bean 설정에 직접 특정 메서드를 지칭하여 초기화 대상으로 선정한다.(Spring은 코드기반을 먼저 실행하도록 설계하는 경향이 있어, 이 init-method가 가장마지막에 실행된다고한다..)
+
+9. applyBeanPostProcessorsAfterInitialization() (여기서 AOP 프록시가 생성됨)
+
+이단계에서는 모든 BeanPostProcessor 중 postProcessAfterInitialization() 메서드를 구현하고 있는 대상을 Bean에게 전달한다.
+
+그중 AOP 프록시를 만드는 대표적인 핵심 컴포넌트들은
+
+- InfrastructureAdvisorAutoProxyCreator (@transactional, @Async, @Cacheable, @Scheduled 등 스프링 자체적으로 제공되는 AOP 대상들)
+- AnnotationAwareAspectJAutoProxyCreator (@Aspect, @Before, @AfterReturning, @Around, 포인트컷 표현식 등을 기반인 AOP 대상들)
+
+이다.
+
+이 두 BPP는 이 Bean에 적용가능한 Advisor(=Pointcut + Advice) 가 있는지, AOP 대상인지를 판단한다.
+
+조건에 해당할 경우 ProxyFactory를 사용하여 프록시를 생성하고 원본 Bean 대신 프록시를 반환한다.
+
+CGLIB와 Dynamic Proxy 가 분리되어 결정되는 구간은 이곳이 아닌 ProxyFactory 내부전략에 의함이다.(자세한건 AOP 관련 주제를 다룰떄..)
+
+10. registerDisposableBeanIfNecessary()
+컨테이너가 종료되는 시점에 이 Bean을 Destroy 할 때, DisposableBean 이면(@PreDestroy 같은) 이를 사전에 등록해준다.(쉽게 말해 소멸콜백 등록)
+
+여기까지 진행되어, ApplicationContext의 refresh() 단계가 모두 끝이 났다.
+
+이후 Tomcat(WebServer를 기동하고 라이프사이클 bean들이 start되며 최종적으로 실제 애플리케이션이 구동이 완료된다.)
+
+![img_16.png](img_16.png)
+
+## 소멸 단계 (소멸전 콜백, 소멸)
+이제 애플리케이션이 종료되는 단계이다.
+
+JVM이 종료되거나, SIGTERM을 수신했거나, 스프링부트 앱 ContextClosedEvent가 발생했거나, 명시적으로 contet.close()가 호출되는 등
+
+실제로 애플리케이션이 종료되는 ApplicationContext가 종료되는 시점에 Spring은 모든 싱글톤 Bean들에게 Destroy 콜백을 실행한다.
+
+![img_17.png](img_17.png)
+
+destroyBeans() 메서드에서는 BeanFactory에게 모든 싱글톤 빈을 destroy하라고 작업을 위임한다.
+
+그럼 소멸 단계로 상태를 전이하고 본격적으로 소멸단계를 수행하게 된다.
+
+먼저 앞서 기록해둔 disposableBeans를 모두 획득하고, 획득된 bean 이름을 기반으로 destroySingleton() 메서드를 호출하여, 소멸전 콜백을 수행한다.
+
+![img_18.png](img_18.png)
+
+그리고 그후, BeanMap을 모두 Clear 하고 싱글톤 캐시 정보도 모두 Clear한다.
+
+그리고 그후 종료된다.
