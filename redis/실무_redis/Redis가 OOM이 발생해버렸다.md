@@ -13,11 +13,13 @@ redis에서는 OOM이 발생하지 않도록, maxmemory 설정과 policy를 제�
 전략에 따라, 메모리에 상주중인 데이터 중 쓸모없는 기준의 우선순위를 의사결정하여, 메모리를 일부 확보하는 방식이다.
 
 - maxmemory-policy
-  - volatile-lru : TTL expire set에 설정된 값 중 가장 오랫동안 참조되지 않은 값 삭제
+  - volatile-lru(Elasticache:default) : TTL expire set에 설정된 값 중 가장 오랫동안 참조되지 않은 값 삭제
   - allkeys-lru : 가장 오랫동안 참조되지 않은 값을 기반으로 Key 삭제
   - volatile-random : TTL expire set에 설정된 데이터 중 랜덤하게 삭제
   - allkeys-random : 랜덤으로 Key 삭제
   - volatile-ttl : TTL expire set이 설정된 값 중 가장 근 미래에 있는 TTL을 갖는 데이터 부터 삭제
+  - valatile-lfu : TTL sxpire set이 설정된 데이터 중 LFU 알고리즘 기반으로 키를 삭제
+  - allkeys-lfu : 전체 데이터 중 LFU 알고리즘 기반으로 키를 삭제
   - noeviction(default) : 캐시를 제거하지 않고, MAX memory에 도달할 경우, 쓰기 오류 반환
 
 > MAX 메모리에 도달했을 때, "야 너 메모리 너가 설정한 최대치에 도달했어. OOM이 발생하면 너무 크리티컬하니깐, 내가 나열해준 전략중에 하나 선택하면
